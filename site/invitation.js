@@ -27,6 +27,7 @@ let envelopePrepared = false;
 let openingInvitation;
 let navigation = 0;
 let resolveGeneration = 0;
+let resumeMusicOnShow = false;
 
 function parseGuestToken(fragment) {
   if (!fragment.startsWith("#to=")) return "";
@@ -88,6 +89,7 @@ async function syncGuestAccess() {
 
   if (!guestName) {
     navigation++;
+    resumeMusicOnShow = false;
     if (music && !music.paused) music.pause();
     cover.hidden = true;
     content.hidden = true;
@@ -151,12 +153,34 @@ function playMusic() {
   if (music?.paused) void music.play().catch(syncMusicToggle);
 }
 
+function pauseMusicForBackground() {
+  if (!music || music.paused) return;
+  resumeMusicOnShow = true;
+  music.pause();
+}
+
 if (music && musicToggle) {
   music.addEventListener("play", syncMusicToggle);
   music.addEventListener("pause", syncMusicToggle);
   musicToggle.addEventListener("click", () => {
+    resumeMusicOnShow = false;
     if (music.paused) playMusic();
     else music.pause();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      pauseMusicForBackground();
+    } else if (resumeMusicOnShow) {
+      resumeMusicOnShow = false;
+      if (guestName) playMusic();
+    }
+  });
+  window.addEventListener("pagehide", pauseMusicForBackground);
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted && resumeMusicOnShow && !document.hidden) {
+      resumeMusicOnShow = false;
+      if (guestName) playMusic();
+    }
   });
   musicToggle.hidden = false;
 }
