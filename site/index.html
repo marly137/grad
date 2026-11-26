@@ -12,9 +12,9 @@
   <meta property="og:description" content="{{DESCRIPTION}}">
   {{SOCIAL}}
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v={{CACHE_BUST}}">
   <script id="guest-data" type="application/json">{{GUESTS}}</script>
-  <script src="./invitation.js" defer></script>
+  <script src="./invitation.js?v={{CACHE_BUST}}" defer></script>
 </head>
 <body>
   {{MUSIC}}
@@ -66,15 +66,24 @@
             <a class="button button-outline" href="#thu-moi" data-invitation-link>Đọc lời mời</a>
           </div>
           <div class="date-card">
-            <span class="date-card-mark" aria-hidden="true">✦</span>
-            <time datetime="{{CEREMONY_DATE}}">{{EVENT_DATE_SHORT}}</time>
-            <span>{{EVENT_DAY}}</span>
+            <div class="date-card-back" aria-hidden="true"></div>
+            <div class="date-card-front">
+              <div class="date-card-frame" aria-hidden="true"></div>
+              <time class="date-card-body" datetime="{{CEREMONY_DATE}}">
+                <span class="date-card-weekday">{{EVENT_WEEKDAY}}</span>
+                <span class="date-card-day">{{EVENT_DAY_NUMBER}}</span>
+                <span class="date-card-month">{{EVENT_MONTH_YEAR}}</span>
+              </time>
+              <div class="date-card-mark" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0 9.9 6.1 16 8 9.9 9.9 8 16 6.1 9.9 0 8 6.1 6.1Z"/></svg>
+              </div>
+            </div>
           </div>
         </div>
         <div class="letter" id="thu-moi" tabindex="-1">
           <div class="letter-petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="letter-inner shell">
-            <p class="section-kicker">Lời mời từ trái tim</p>
+            <p class="section-kicker">Lời mời</p>
             <h2 id="letter-title" class="section-title">Gửi đến những người đặc biệt trong hành trình của mình,</h2>
             <div class="section-copy letter-copy">
               {{INVITATION}}

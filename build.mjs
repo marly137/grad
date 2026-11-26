@@ -63,6 +63,7 @@ function escapeHtml(value) {
 const vietnamTime = { timeZone: "Asia/Ho_Chi_Minh" };
 const shortDate = new Intl.DateTimeFormat("en-GB", { ...vietnamTime, day: "2-digit", month: "2-digit", year: "numeric" });
 const longDate = new Intl.DateTimeFormat("vi-VN", { ...vietnamTime, dateStyle: "full" });
+const weekdayDate = new Intl.DateTimeFormat("vi-VN", { ...vietnamTime, weekday: "long" });
 const shortTime = new Intl.DateTimeFormat("vi-VN", { ...vietnamTime, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const dateLabel = ({ date }) => `${shortTime.format(date)} · ${longDate.format(date)}`;
 
@@ -103,6 +104,7 @@ if (musicFile && (!musicFile.isFile() || musicFile.size === 0 || musicFile.size 
   throw new Error("nhac-nen.mp3 cần là file MP3 có dung lượng lớn hơn 0 và tối đa 25 MiB.");
 }
 
+const [ceremonyDay, ceremonyMonth, ceremonyYear] = shortDate.format(ceremony.date).split("/");
 const values = {
   TITLE: event.isDemo ? "Thiệp mời tốt nghiệp · Bản minh họa" : `Thiệp mời tốt nghiệp · ${name}`,
   DESCRIPTION: invitation[0],
@@ -110,7 +112,10 @@ const values = {
   CEREMONY_AT: ceremony.value,
   CEREMONY_DATE: ceremony.value.slice(0, 10),
   EVENT_DAY: longDate.format(ceremony.date),
-  EVENT_DATE_SHORT: shortDate.format(ceremony.date).replaceAll("/", "."),
+  EVENT_DATE_SHORT: `${ceremonyDay}.${ceremonyMonth}.${ceremonyYear}`,
+  EVENT_WEEKDAY: weekdayDate.format(ceremony.date),
+  EVENT_DAY_NUMBER: ceremonyDay,
+  EVENT_MONTH_YEAR: `THÁNG ${Number(ceremonyMonth)} · ${ceremonyYear}`,
   GUEST_START: guestStart,
   CEREMONY_TIME: shortTime.format(ceremony.date),
   GUEST_FROM: guestFrom,
@@ -147,7 +152,20 @@ function encryptGuests(guestMap) {
 
 const { encrypted: encryptedGuests, list: guestList } = encryptGuests(guests);
 
+const [stylesBuffer, invitationBuffer, envelopeBuffer] = await Promise.all([
+  readFile(new URL("styles.css", source)),
+  readFile(new URL("invitation.js", source)),
+  readFile(new URL("envelope.js", source)),
+]);
+const cacheBust = createHash("sha256")
+  .update(stylesBuffer)
+  .update(invitationBuffer)
+  .update(envelopeBuffer)
+  .digest("hex")
+  .slice(0, 8);
+
 const markup = {
+  CACHE_BUST: cacheBust,
   GUESTS: JSON.stringify(encryptedGuests).replaceAll("<", "\\u003c"),
   INVITATION: invitation.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("\n              "),
   SIGNATURE: signature.length ? `<p class="letter-signature"><em>${signature.map(escapeHtml).join("<br>")}</em></p>` : "",
