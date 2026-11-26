@@ -6,7 +6,9 @@ Chạy `npm ci` một lần để cài Three.js và công cụ build. Sau đó c
 
 Sửa `event.json` khi đổi nội dung, chạy lại `npm run build` rồi tải lại trang. `ceremonyAt` dùng dạng `YYYY-MM-DDTHH:mm:ss+07:00`, còn `guestFrom` và `guestUntil` dùng dạng `HH:mm`. Giữ `photoAt` là `""` để ẩn phần giờ hẹn chụp ảnh.
 
-Để thêm nhạc nền, đặt bản beat bạn được phép chia sẻ vào cùng thư mục với `event.json`, đặt tên `nhac-nen.mp3` rồi chạy lại `node build.mjs`. Khách bấm **Bật nhạc** để nghe lặp và bấm **Tắt nhạc** để dừng. Nút nhạc chỉ xuất hiện khi có file MP3.
+Khi đổi địa điểm, cập nhật `venue`, `address`, `mapsUrl` và `mapEmbedUrl` cùng nhau. Để `mapEmbedUrl` trống nếu chỉ dùng nút **Chỉ đường**. Phần đếm ngược và nút **Thêm vào lịch** dùng khung giờ gặp khách.
+
+Để thêm nhạc nền, đặt bản beat bạn được phép chia sẻ vào cùng thư mục với `event.json`, đặt tên `nhac-nen.mp3` rồi chạy lại `npm run build`. Nhạc phát lặp khi khách bấm **Mở thiệp**. Nút tròn góc dưới bên phải dùng để tạm dừng và phát tiếp.
 
 ## Đưa thiệp lên Cloudflare Pages
 

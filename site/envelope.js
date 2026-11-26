@@ -26,7 +26,7 @@ function mark(material) {
 
 function makeEnvelope() {
   const envelope = new THREE.Group();
-  envelope.rotation.set(-.065, -.2, -.11);
+  envelope.rotation.set(-.15, -.35, -.11);
   envelope.position.y = -.33;
 
   const back = box(4.18, 2.62, .14, paper("#b4cfe3"));
@@ -141,20 +141,33 @@ export function mountEnvelope(stage) {
     finishOpening?.();
   }
 
-  function open() {
+  function pose(progress) {
+    const lift = ease(clamp((progress - .45) / .55));
+    flap.rotation.x = -Math.PI * ease(clamp(progress / .56));
+    flap.position.z = .18 - .24 * ease(clamp((progress - .27) / .29));
+    card.position.y = -.22 + 1.48 * lift;
+    card.position.z = .022 + .085 * lift;
+    envelope.rotation.y = -.35 + .18 * lift;
+    envelope.rotation.z = -.11 + .055 * lift;
+  }
+
+  function open(animate = true) {
     if (disposed) return Promise.resolve();
+    if (!animate) {
+      cancelAnimationFrame(frame);
+      pose(1);
+      render();
+      finishOpening?.();
+      opening ??= Promise.resolve();
+      return opening;
+    }
     if (opening) return opening;
 
     opening = new Promise((resolve) => { finishOpening = resolve; });
     const startedAt = performance.now();
     function animate(now) {
       const progress = clamp((now - startedAt) / openingTime);
-      const lift = ease(clamp((progress - .45) / .55));
-      flap.rotation.x = -Math.PI * ease(clamp(progress / .56));
-      flap.position.z = .18 - .24 * ease(clamp((progress - .27) / .29));
-      card.position.y = -.22 + 1.48 * lift;
-      card.position.z = .022 + .085 * lift;
-      envelope.rotation.z = -.11 + .055 * lift;
+      pose(progress);
       if (!render()) return;
       if (progress < 1) frame = requestAnimationFrame(animate);
       else finishOpening();

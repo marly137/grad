@@ -13,73 +13,137 @@
   {{SOCIAL}}
   <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="./styles.css">
+  <script id="guest-data" type="application/json">{{GUESTS}}</script>
   <script src="./invitation.js" defer></script>
 </head>
 <body>
-  <header class="masthead shell">
-    <span class="mark"><span class="mark-icon" aria-hidden="true">✦</span> THIỆP MỜI TỐT NGHIỆP</span>
-    <div class="masthead-actions">
-      <a href="#thong-tin" class="masthead-link">Thông tin buổi lễ</a>
-      {{MUSIC}}
-    </div>
-  </header>
-  {{DEMO}}
+  {{MUSIC}}
   <main>
-    <section class="hero shell" aria-labelledby="title">
-      <div class="hero-copy">
-        <p class="salutation" id="guest-greeting">Thân mời bạn</p>
-        <h1 id="title">Mời bạn đến dự<br class="hero-break"> <em>lễ tốt nghiệp.</em></h1>
-        <p class="graduate">{{NAME}}</p>
-        <div class="hero-actions">
-          <a href="#loi-moi" class="button button-primary" data-open-envelope>Mở thiệp</a>
-          <a href="#thong-tin" class="hero-details-link">Xem giờ và địa điểm</a>
+    <noscript>
+      <section class="cover access-denied" aria-labelledby="noscript-title">
+        <div class="sprig sprig-left" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
+        <div class="sprig sprig-right" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
+        <div class="cover-inner shell">
+          <p class="section-kicker">Thiệp mời riêng tư</p>
+          <h1 id="noscript-title" class="access-title">Cần bật JavaScript để mở thiệp</h1>
+          <p class="section-copy">Vui lòng bật JavaScript và mở đúng đường dẫn thiệp mời được {{NAME}} gửi nhé.</p>
         </div>
+      </section>
+    </noscript>
+    <section class="cover access-denied" hidden aria-labelledby="access-denied-title">
+      <div class="sprig sprig-left" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
+      <div class="sprig sprig-right" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
+      <div class="cover-inner shell">
+        <p class="section-kicker">Thiệp mời riêng tư</p>
+        <h1 id="access-denied-title" class="access-title">Không tìm thấy thiệp mời</h1>
+        <p class="section-copy">Đường dẫn không hợp lệ hoặc không thuộc danh sách khách mời. Vui lòng kiểm tra lại link được {{NAME}} gửi nhé.</p>
       </div>
-      <figure class="envelope-figure">
+    </section>
+    <section class="cover" hidden aria-labelledby="title">
+      <div class="sprig sprig-left" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
+      <div class="sprig sprig-right" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
+      <div class="cover-inner shell">
+        <p class="eyebrow cover-name">{{NAME}}</p>
+        <h1 id="title">Thiệp mời <em>tốt nghiệp</em></h1>
         <div class="envelope-stage" id="envelope-stage" aria-hidden="true">
           <div class="envelope-static">
             <span class="envelope-static-flap"></span>
             <span class="envelope-static-seal">✦</span>
           </div>
         </div>
-        <figcaption><span aria-hidden="true">✦</span><time datetime="{{CEREMONY_DATE}}">{{COVER_DATE}}</time></figcaption>
-      </figure>
-    </section>
-    <section class="letter shell" id="loi-moi" aria-labelledby="letter-title" tabindex="-1">
-      <div class="letter-inner">
-        <h2 id="letter-title">Lời mời</h2>
-        {{INVITATION}}
-        {{SIGNATURE}}
+        <p class="recipient"><span class="eyebrow">Trân trọng gửi đến</span><strong data-guest-name>Bạn</strong></p>
+        <a href="#loi-moi" class="button button-primary" data-open-envelope>Mở thiệp</a>
+        {{DEMO}}
       </div>
     </section>
-    <section class="details" id="thong-tin" aria-labelledby="details-title" tabindex="-1">
-      <div class="shell details-inner">
-        <div class="details-intro">
-          <span class="detail-mark" aria-hidden="true">✦</span>
-          <h2 id="details-title">Thông tin <em>buổi lễ</em></h2>
-        </div>
-        <div class="detail-list">
-          <div class="detail-item">
-            <h3>Thời gian gặp nhau</h3>
-            <p class="guest-time"><time datetime="{{GUEST_FROM}}">{{GUEST_FROM}}</time>–<time datetime="{{GUEST_UNTIL}}">{{GUEST_UNTIL}}</time></p>
-            <p><time datetime="{{CEREMONY_DATE}}">{{EVENT_DAY}}</time></p>
-            <p class="address">Lễ bắt đầu lúc <time datetime="{{CEREMONY_AT}}">{{CEREMONY_TIME}}</time>.</p>
+    <div id="loi-moi" class="invitation-content" hidden>
+      <section aria-labelledby="letter-title">
+        <div class="opening shell">
+          <div class="opening-copy">
+            <p class="recipient"><span class="eyebrow">Trân trọng kính mời</span><strong data-guest-name>Bạn</strong></p>
+            <h1 id="opening-title" tabindex="-1">Lễ tốt nghiệp <em>của {{NAME}}</em></h1>
+            <p class="opening-venue">{{VENUE}}</p>
+            <a class="button button-outline" href="#thu-moi" data-invitation-link>Đọc lời mời</a>
           </div>
-          <div class="detail-item">
-            <h3>Địa điểm</h3>
-            <p>{{VENUE}}</p>
-            <p class="address">{{ADDRESS}}</p>
+          <div class="date-card">
+            <span class="date-card-mark" aria-hidden="true">✦</span>
+            <time datetime="{{CEREMONY_DATE}}">{{EVENT_DATE_SHORT}}</time>
+            <span>{{EVENT_DAY}}</span>
           </div>
-          {{PHOTO_MEETUP}}
-          <a class="button button-maps" href="{{MAPS}}" target="_blank" rel="noopener noreferrer">Chỉ đường</a>
         </div>
-      </div>
-    </section>
+        <div class="letter" id="thu-moi" tabindex="-1">
+          <div class="letter-petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="letter-inner shell">
+            <p class="section-kicker">Lời mời từ trái tim</p>
+            <h2 id="letter-title" class="section-title">Gửi đến những người đặc biệt trong hành trình của mình,</h2>
+            <div class="section-copy letter-copy">
+              {{INVITATION}}
+              {{SIGNATURE}}
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="details" id="thong-tin" aria-labelledby="details-title" tabindex="-1">
+        <div class="shell">
+          <h2 id="details-title" class="section-kicker">Hẹn gặp bạn</h2>
+          <div class="event-card details-card">
+            <div class="venue-section">
+              <h3>{{VENUE}}</h3>
+              <p id="venue-address" class="venue-address">
+                <svg class="inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>
+                <span>{{ADDRESS}}</span>
+              </p>
+              {{MAP_EMBED}}
+              <div class="event-actions">
+                <button class="button button-outline" type="button" data-copy-address hidden>
+                  <svg class="inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Sao chép địa chỉ</span>
+                </button>
+                <a class="button button-primary" href="{{MAPS}}" target="_blank" rel="noopener noreferrer">
+                  <svg class="inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>
+                  <span>Chỉ đường</span>
+                </a>
+                <span class="copy-status" role="status"></span>
+              </div>
+            </div>
+            <div class="time-section">
+              <p class="eyebrow">Thời gian</p>
+              <h3 class="guest-time"><time datetime="{{GUEST_FROM}}">{{GUEST_FROM}}</time>–<time datetime="{{GUEST_UNTIL}}">{{GUEST_UNTIL}}</time></h3>
+              <p><time datetime="{{CEREMONY_DATE}}">{{EVENT_DAY}}</time></p>
+              {{PHOTO_MEETUP}}
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="countdown shell" aria-labelledby="countdown-title" data-countdown="{{GUEST_START}}">
+        <p class="section-kicker">Lưu lại ngày đặc biệt</p>
+        <h2 id="countdown-title" class="section-title">Đếm ngược đến ngày gặp nhau</h2>
+        <div class="section-copy countdown-copy">
+          <p><time datetime="{{CEREMONY_DATE}}">{{EVENT_DAY}}</time></p>
+          <p>Cùng đón chờ: Lễ tốt nghiệp</p>
+        </div>
+        <dl class="countdown-grid" hidden>
+          <div><dt>Ngày</dt><dd>00</dd></div><div><dt>Giờ</dt><dd>00</dd></div>
+          <div><dt>Phút</dt><dd>00</dd></div><div><dt>Giây</dt><dd>00</dd></div>
+        </dl>
+        <p class="countdown-quote">“Một chặng đường khép lại. Một bầu trời mới mở ra.”</p>
+      </section>
+      <section class="thanks" aria-labelledby="thanks-title">
+        <div class="shell">
+          <p class="section-kicker">Lời cảm ơn</p>
+          <h2 id="thanks-title" class="section-title">Cảm ơn vì đã là một phần của hành trình.</h2>
+          <div class="section-copy thanks-copy">
+            <p>Sự hiện diện của bạn là món quà ý nghĩa nhất trong ngày tốt nghiệp của mình.</p>
+            <p>Hẹn gặp bạn, để cùng viết thêm một kỷ niệm thật đẹp.</p>
+          </div>
+          <p class="letter-signature"><em>Trân trọng, {{NAME}}</em></p>
+        </div>
+      </section>
+      <footer class="site-footer">
+        <p class="shell">Made of memories &amp; new beginnings</p>
+      </footer>
+      {{MUSIC_CONTROL}}
+    </div>
   </main>
-  <footer class="footer shell">
-    <span class="mark-icon" aria-hidden="true">✦</span>
-    <p>Hẹn gặp bạn trong ngày tốt nghiệp!</p>
-    <span class="mark-icon" aria-hidden="true">✦</span>
-  </footer>
 </body>
 </html>

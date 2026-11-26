@@ -1,3 +1,4 @@
+import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -8,7 +9,9 @@ const output = new URL("dist/", project);
 const assets = new URL("assets/", output);
 const musicSource = new URL("nhac-nen.mp3", project);
 const musicOutput = new URL("nhac-nen.mp3", assets);
+const linksOutput = new URL("outputs/grad-invitation/guest-links.txt", project);
 const event = JSON.parse(await readFile(new URL("event.json", project), "utf8"));
+const guests = JSON.parse(await readFile(new URL("guests.json", project), "utf8"));
 const publishing = process.argv.includes("--publish");
 
 function requiredText(key) {
@@ -57,10 +60,22 @@ const guestUntil = clockTime("guestUntil");
 if (guestFrom >= guestUntil) throw new Error("guestUntil cần muộn hơn guestFrom.");
 const meetup = event.photoAt ? dateValue("photoAt") : null;
 const maps = httpsUrl("mapsUrl");
+const mapEmbed = event.mapEmbedUrl ? httpsUrl("mapEmbedUrl") : null;
 const invitation = requiredText("invitation").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 const signature = event.invitationSignature ? requiredText("invitationSignature").split(/\r?\n/) : [];
 const venue = requiredText("venue");
 const address = requiredText("address");
+const guestStart = `${ceremony.value.slice(0, 10)}T${guestFrom}:00+07:00`;
+const guestEnd = `${ceremony.value.slice(0, 10)}T${guestUntil}:00+07:00`;
+const calendar = new URL("https://calendar.google.com/calendar/render");
+const calendarTime = (value) => new Date(value).toISOString().replace(/[-:]|\.000/g, "");
+calendar.search = new URLSearchParams({
+  action: "TEMPLATE",
+  text: `Gặp ${name} tại lễ tốt nghiệp`,
+  dates: `${calendarTime(guestStart)}/${calendarTime(guestEnd)}`,
+  location: `${venue}, ${address}`,
+  details: maps.href,
+});
 if (typeof event.isDemo !== "boolean") throw new Error("isDemo cần là true hoặc false.");
 const site = event.siteUrl ? httpsUrl("siteUrl") : null;
 if (site && (site.search || site.hash)) throw new Error("siteUrl cần là địa chỉ gốc của thiệp, không có query hoặc fragment.");
@@ -82,27 +97,55 @@ const values = {
   CEREMONY_AT: ceremony.value,
   CEREMONY_DATE: ceremony.value.slice(0, 10),
   EVENT_DAY: longDate.format(ceremony.date),
-  COVER_DATE: shortDate.format(ceremony.date).replaceAll("/", "."),
+  EVENT_DATE_SHORT: shortDate.format(ceremony.date).replaceAll("/", "."),
+  GUEST_START: guestStart,
   CEREMONY_TIME: shortTime.format(ceremony.date),
   GUEST_FROM: guestFrom,
   GUEST_UNTIL: guestUntil,
   VENUE: venue,
   ADDRESS: address,
   MAPS: maps.href,
+  CALENDAR: calendar.href,
 };
+function encryptGuests(guestMap) {
+  if (!guestMap || typeof guestMap !== "object" || Array.isArray(guestMap) || !Object.keys(guestMap).length) {
+    throw new Error("guests.json cần là object map mã link -> tên khách mời.");
+  }
+  const encrypted = {};
+  const list = [];
+  for (const [token, rawName] of Object.entries(guestMap)) {
+    if (!/^[a-z0-9_-]{6,64}$/.test(token)) {
+      throw new Error(`Mã khách "${token}" trong guests.json chỉ được chứa a-z, 0-9, _ hoặc - (6–64 ký tự).`);
+    }
+    if (typeof rawName !== "string" || !rawName.trim() || [...rawName.trim()].length > 120) {
+      throw new Error(`Tên khách cho mã "${token}" trong guests.json không hợp lệ.`);
+    }
+    const guestName = rawName.trim();
+    const id = createHash("sha256").update(`id:${token}`).digest("hex").slice(0, 32);
+    const key = createHash("sha256").update(`key:${token}`).digest();
+    const iv = randomBytes(12);
+    const cipher = createCipheriv("aes-256-gcm", key, iv);
+    const ciphertext = Buffer.concat([cipher.update(guestName, "utf8"), cipher.final()]);
+    encrypted[id] = Buffer.concat([iv, ciphertext, cipher.getAuthTag()]).toString("base64");
+    list.push({ token, name: guestName });
+  }
+  return { encrypted, list };
+}
+
+const { encrypted: encryptedGuests, list: guestList } = encryptGuests(guests);
+
 const markup = {
-  INVITATION: invitation.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("\n        "),
+  GUESTS: JSON.stringify(encryptedGuests).replaceAll("<", "\\u003c"),
+  INVITATION: invitation.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("\n              "),
   SIGNATURE: signature.length ? `<p class="letter-signature"><em>${signature.map(escapeHtml).join("<br>")}</em></p>` : "",
-  MUSIC: musicFile ? `<div class="music-control">
-      <button class="music-toggle" type="button" hidden><span aria-hidden="true">♫</span> <span id="music-label">Bật nhạc</span></button>
-      <audio id="background-music" src="./assets/nhac-nen.mp3" preload="none" loop></audio>
-      <p class="music-status" id="music-status" role="status"></p>
-    </div>` : "",
+  MUSIC: musicFile ? '<audio id="background-music" src="./assets/nhac-nen.mp3" preload="none" loop></audio>' : "",
+  MUSIC_CONTROL: musicFile ? '<button class="music-button" type="button" data-music-toggle aria-controls="background-music" aria-label="Phát nhạc" title="Phát nhạc" hidden></button>' : "",
   SOCIAL: site ? [
     `<link rel="canonical" href="${escapeHtml(site.href)}">`,
     `<meta property="og:url" content="${escapeHtml(site.href)}">`,
   ].join("\n  ") : "",
   DEMO: event.isDemo ? '<p class="demo shell">Bản minh họa · Thông tin buổi lễ là dữ liệu mẫu.</p>' : "",
+  MAP_EMBED: mapEmbed ? `<iframe class="venue-map" data-map-src="${escapeHtml(mapEmbed.href)}" title="Bản đồ ${escapeHtml(venue)}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>` : "",
   PHOTO_MEETUP: meetup ? `<div class="detail-item">
             <h3>Hẹn chụp ảnh</h3>
             <p><time datetime="${escapeHtml(meetup.value)}">${escapeHtml(dateLabel(meetup))}</time></p>
@@ -134,10 +177,15 @@ for (const asset of oldAssets) {
     await rm(new URL(encodeURIComponent(asset.name), assets), { force: true });
   }
 }
+await mkdir(new URL("./", linksOutput), { recursive: true });
+const baseUrl = site ? site.href : "http://127.0.0.1:8712/";
+const guestLinksText = guestList.map(({ name: guest, token }) => `${guest}: ${baseUrl}#to=${token}`).join("\n");
 await Promise.all([
   copyFile(new URL("styles.css", source), new URL("styles.css", output)),
   copyFile(new URL("invitation.js", source), new URL("invitation.js", output)),
   musicFile ? copyFile(musicSource, musicOutput) : rm(musicOutput, { force: true }),
+  writeFile(linksOutput, `${guestLinksText}\n`),
 ]);
 await writeFile(new URL("index.html", output), html);
-console.log(`Đã dựng ${event.isDemo ? "thiệp minh họa" : "thiệp mời"} trong dist/.`);
+console.log(`Đã dựng ${event.isDemo ? "thiệp minh họa" : "thiệp mời"} trong dist/ (${guestList.length} khách mời).`);
+console.log(guestLinksText);
