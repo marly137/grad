@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8fbfd">
+  <title>{{TITLE}}</title>
+  <meta name="description" content="{{DESCRIPTION}}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:title" content="{{TITLE}}">
+  <meta property="og:description" content="{{DESCRIPTION}}">
+  {{SOCIAL}}
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./invitation.js" defer></script>
+</head>
+<body>
+  <header class="masthead shell">
+    <span class="mark"><span class="mark-icon" aria-hidden="true">✦</span> THIỆP MỜI TỐT NGHIỆP</span>
+    <div class="masthead-actions">
+      <a href="#thong-tin" class="masthead-link">Thông tin buổi lễ</a>
+      {{MUSIC}}
+    </div>
+  </header>
+  {{DEMO}}
+  <main>
+    <section class="hero shell" aria-labelledby="title">
+      <div class="hero-copy">
+        <p class="salutation" id="guest-greeting">Thân mời bạn</p>
+        <h1 id="title">Mời bạn đến dự<br class="hero-break"> <em>lễ tốt nghiệp.</em></h1>
+        <p class="graduate">{{NAME}}</p>
+        <div class="hero-actions">
+          <a href="#loi-moi" class="button button-primary" data-open-envelope>Mở thiệp</a>
+          <a href="#thong-tin" class="hero-details-link">Xem giờ và địa điểm</a>
+        </div>
+      </div>
+      <figure class="envelope-figure">
+        <div class="envelope-stage" id="envelope-stage" aria-hidden="true">
+          <div class="envelope-static">
+            <span class="envelope-static-flap"></span>
+            <span class="envelope-static-seal">✦</span>
+          </div>
+        </div>
+        <figcaption><span aria-hidden="true">✦</span><time datetime="{{CEREMONY_DATE}}">{{COVER_DATE}}</time></figcaption>
+      </figure>
+    </section>
+    <section class="letter shell" id="loi-moi" aria-labelledby="letter-title" tabindex="-1">
+      <div class="letter-inner">
+        <h2 id="letter-title">Lời mời</h2>
+        {{INVITATION}}
+        {{SIGNATURE}}
+      </div>
+    </section>
+    <section class="details" id="thong-tin" aria-labelledby="details-title" tabindex="-1">
+      <div class="shell details-inner">
+        <div class="details-intro">
+          <span class="detail-mark" aria-hidden="true">✦</span>
+          <h2 id="details-title">Thông tin <em>buổi lễ</em></h2>
+        </div>
+        <div class="detail-list">
+          <div class="detail-item">
+            <h3>Thời gian gặp nhau</h3>
+            <p class="guest-time"><time datetime="{{GUEST_FROM}}">{{GUEST_FROM}}</time>–<time datetime="{{GUEST_UNTIL}}">{{GUEST_UNTIL}}</time></p>
+            <p><time datetime="{{CEREMONY_DATE}}">{{EVENT_DAY}}</time></p>
+            <p class="address">Lễ bắt đầu lúc <time datetime="{{CEREMONY_AT}}">{{CEREMONY_TIME}}</time>.</p>
+          </div>
+          <div class="detail-item">
+            <h3>Địa điểm</h3>
+            <p>{{VENUE}}</p>
+            <p class="address">{{ADDRESS}}</p>
+          </div>
+          {{PHOTO_MEETUP}}
+          <a class="button button-maps" href="{{MAPS}}" target="_blank" rel="noopener noreferrer">Chỉ đường</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer shell">
+    <span class="mark-icon" aria-hidden="true">✦</span>
+    <p>Hẹn gặp bạn trong ngày tốt nghiệp!</p>
+    <span class="mark-icon" aria-hidden="true">✦</span>
+  </footer>
+</body>
+</html>
