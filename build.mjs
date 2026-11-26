@@ -11,7 +11,20 @@ const musicSource = new URL("nhac-nen.mp3", project);
 const musicOutput = new URL("nhac-nen.mp3", assets);
 const linksOutput = new URL("outputs/grad-invitation/guest-links.txt", project);
 const event = JSON.parse(await readFile(new URL("event.json", project), "utf8"));
-const guests = JSON.parse(await readFile(new URL("guests.json", project), "utf8"));
+const isCI = Boolean(process.env.CI || process.env.GITHUB_ACTIONS);
+const guestsSource = process.env.GUESTS_JSON?.trim()
+  ? process.env.GUESTS_JSON
+  : await readFile(new URL("guests.json", project), "utf8").catch((error) => {
+      if (error.code === "ENOENT") {
+        throw new Error(
+          isCI
+            ? "Thiếu GitHub Secret GUESTS_JSON trong Settings -> Secrets and variables -> Actions."
+            : "Thiếu guests.json trong thư mục dự án.",
+        );
+      }
+      throw error;
+    });
+const guests = JSON.parse(guestsSource);
 const publishing = process.argv.includes("--publish");
 
 function requiredText(key) {
@@ -177,15 +190,18 @@ for (const asset of oldAssets) {
     await rm(new URL(encodeURIComponent(asset.name), assets), { force: true });
   }
 }
-await mkdir(new URL("./", linksOutput), { recursive: true });
 const baseUrl = site ? site.href : "http://127.0.0.1:8712/";
 const guestLinksText = guestList.map(({ name: guest, token }) => `${guest}: ${baseUrl}#to=${token}`).join("\n");
-await Promise.all([
+const copyTasks = [
   copyFile(new URL("styles.css", source), new URL("styles.css", output)),
   copyFile(new URL("invitation.js", source), new URL("invitation.js", output)),
   musicFile ? copyFile(musicSource, musicOutput) : rm(musicOutput, { force: true }),
-  writeFile(linksOutput, `${guestLinksText}\n`),
-]);
+];
+if (!isCI) {
+  await mkdir(new URL("./", linksOutput), { recursive: true });
+  copyTasks.push(writeFile(linksOutput, `${guestLinksText}\n`));
+}
+await Promise.all(copyTasks);
 await writeFile(new URL("index.html", output), html);
 console.log(`Đã dựng ${event.isDemo ? "thiệp minh họa" : "thiệp mời"} trong dist/ (${guestList.length} khách mời).`);
-console.log(guestLinksText);
+if (!isCI) console.log(guestLinksText);
