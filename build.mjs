@@ -107,7 +107,6 @@ if (musicFile && (!musicFile.isFile() || musicFile.size === 0 || musicFile.size 
 const [ceremonyDay, ceremonyMonth, ceremonyYear] = shortDate.format(ceremony.date).split("/");
 const values = {
   TITLE: event.isDemo ? "Thiệp mời tốt nghiệp · Bản minh họa" : `Thiệp mời tốt nghiệp · ${name}`,
-  DESCRIPTION: `Một lời mời chung vui trong ngày tốt nghiệp của ${name}.`,
   NAME: name,
   CEREMONY_AT: ceremony.value,
   CEREMONY_DATE: ceremony.value.slice(0, 10),
@@ -240,7 +239,7 @@ const baseUrl = shareSite ? shareSite.href : `http://127.0.0.1:8712/${shareRoute
 const guestLinksText = guestList.map(({ name: guest, token }) => {
   const link = new URL(baseUrl);
   link.searchParams.set("to", token);
-  link.searchParams.set("v", "2");
+  link.searchParams.set("v", "3");
   return `${guest}: ${link.href}`;
 }).join("\n");
 const copyTasks = [

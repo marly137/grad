@@ -13,7 +13,7 @@ Khi đổi địa điểm, cập nhật `venue`, `address`, `mapsUrl` và `mapEm
 ## Đưa thiệp lên Cloudflare Pages
 
 1. Vào **Workers & Pages → Create application → Get started → Drag and drop your files**. Chọn tên dự án và lấy địa chỉ `https://<tên-dự-án>.pages.dev/` Cloudflare cấp.
-2. Điền địa chỉ đó vào `siteUrl` trong `event.json`. Chạy `npm run build -- --publish` để dựng bản có tiêu đề và mô tả chung khi chia sẻ.
+2. Điền địa chỉ đó vào `siteUrl` trong `event.json`. Chạy `npm run build -- --publish` để dựng bản có tiêu đề và ảnh bìa khi chia sẻ.
 3. Tải thư mục `dist` lên và triển khai. Mở URL công khai để kiểm tra thiệp và nút chỉ đường. Sau khi cập nhật thông tin lễ, dựng lại và tải `dist` lên cùng dự án để các link đã gửi tiếp tục sử dụng được.
 
 [Hướng dẫn Cloudflare Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
@@ -21,5 +21,5 @@ Khi đổi địa điểm, cập nhật `venue`, `address`, `mapsUrl` và `mapEm
 ## Tạo link và lời nhắn cho nhiều khách
 
 1. Thêm mã và tên khách vào `guests.json`. Khi dùng GitHub Pages, cập nhật GitHub Secret `GUESTS_JSON` cùng danh sách rồi triển khai lại.
-2. Chạy `npm run build` và sao chép link của từng khách từ `outputs/grad-invitation/guest-links-local.txt`. Link mới dùng `/moi/?to=MA_KHACH&v=2` để yêu cầu ứng dụng chat tạo lại ảnh xem trước cho URL đầy đủ. Link cũ dùng `?to=MA_KHACH` hoặc `#to=MA_KHACH` vẫn mở được khi bấm vào URL.
+2. Chạy `npm run build` và sao chép link của từng khách từ `outputs/grad-invitation/guest-links-local.txt`. Link mới dùng `/moi/?to=MA_KHACH&v=3` để ứng dụng chat lấy lại thẻ xem trước theo URL đầy đủ. Các link đã gửi vẫn mở được khi bấm vào URL.
 3. Gửi đúng link cho từng khách. Ai có link đều có thể mở thiệp của khách đó. Ứng dụng chat và dịch vụ lưu trữ có thể thấy mã trong link mới. Tên khách hiển thị khi mở thiệp.
