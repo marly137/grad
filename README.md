@@ -21,5 +21,5 @@ Khi đổi địa điểm, cập nhật `venue`, `address`, `mapsUrl` và `mapEm
 ## Tạo link và lời nhắn cho nhiều khách
 
 1. Thêm mã và tên khách vào `guests.json`. Khi dùng GitHub Pages, cập nhật GitHub Secret `GUESTS_JSON` cùng danh sách rồi triển khai lại.
-2. Chạy `npm run build` và sao chép link của từng khách từ `outputs/grad-invitation/guest-links-local.txt`. Link mới dùng `/moi/?to=MA_KHACH` để ứng dụng chat lấy ảnh bìa chung. Link cũ dùng `#to=MA_KHACH` vẫn mở được.
+2. Chạy `npm run build` và sao chép link của từng khách từ `outputs/grad-invitation/guest-links-local.txt`. Link mới dùng `/moi/?to=MA_KHACH&v=2` để yêu cầu ứng dụng chat tạo lại ảnh xem trước cho URL đầy đủ. Link cũ dùng `?to=MA_KHACH` hoặc `#to=MA_KHACH` vẫn mở được khi bấm vào URL.
 3. Gửi đúng link cho từng khách. Ai có link đều có thể mở thiệp của khách đó. Ứng dụng chat và dịch vụ lưu trữ có thể thấy mã trong link mới. Tên khách hiển thị khi mở thiệp.

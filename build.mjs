@@ -187,11 +187,10 @@ const markup = {
           </div>` : "",
 };
 
-function socialMetadata(pageUrl) {
-  if (!pageUrl) return "";
+function socialMetadata() {
+  if (!shareImage) return "";
+  // Let preview crawlers use the requested URL, including its guest code.
   return [
-    `<link rel="canonical" href="${escapeHtml(pageUrl.href)}">`,
-    `<meta property="og:url" content="${escapeHtml(pageUrl.href)}">`,
     `<meta property="og:image" content="${escapeHtml(shareImage.href)}">`,
     `<meta property="og:image:secure_url" content="${escapeHtml(shareImage.href)}">`,
     '<meta property="og:image:type" content="image/png">',
@@ -205,12 +204,12 @@ function socialMetadata(pageUrl) {
 }
 
 const template = await readFile(new URL("index.html", source), "utf8");
-function renderPage(pageUrl, assetBase) {
+function renderPage(assetBase) {
   const pageMarkup = {
     ...markup,
     ASSET_BASE: assetBase,
     MUSIC: musicFile ? `<audio id="background-music" src="${assetBase}assets/nhac-nen.mp3" preload="none" loop></audio>` : "",
-    SOCIAL: socialMetadata(pageUrl),
+    SOCIAL: socialMetadata(),
   };
   return template.replaceAll(/\{\{([A-Z_]+)\}\}/g, (_, key) => {
     if (Object.hasOwn(pageMarkup, key)) return pageMarkup[key];
@@ -241,6 +240,7 @@ const baseUrl = shareSite ? shareSite.href : `http://127.0.0.1:8712/${shareRoute
 const guestLinksText = guestList.map(({ name: guest, token }) => {
   const link = new URL(baseUrl);
   link.searchParams.set("to", token);
+  link.searchParams.set("v", "2");
   return `${guest}: ${link.href}`;
 }).join("\n");
 const copyTasks = [
@@ -255,8 +255,8 @@ if (!isCI) {
 }
 await Promise.all(copyTasks);
 await Promise.all([
-  writeFile(new URL("index.html", output), renderPage(site, "./")),
-  writeFile(new URL("index.html", shareOutput), renderPage(shareSite, "../")),
+  writeFile(new URL("index.html", output), renderPage("./")),
+  writeFile(new URL("index.html", shareOutput), renderPage("../")),
 ]);
 console.log(`Đã dựng ${event.isDemo ? "thiệp minh họa" : "thiệp mời"} trong dist/ (${guestList.length} khách mời).`);
 if (!isCI) console.log(guestLinksText);
