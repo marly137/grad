@@ -11,7 +11,6 @@ const guestEntries = (() => {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const greetings = document.querySelectorAll("[data-guest-name]");
-const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const stage = document.getElementById("envelope-stage");
 const music = document.getElementById("background-music");
 const musicToggle = document.querySelector("[data-music-toggle]");
@@ -25,7 +24,7 @@ let guestName = "";
 let activeToken = "";
 let openedToken = "";
 let envelope;
-let envelopePrepared = false;
+let envelopePreparation;
 let openingInvitation;
 let invitationInitialized = false;
 let navigation = 0;
@@ -78,15 +77,17 @@ async function resolveGuestName(token) {
   }
 }
 
-async function prepareEnvelope() {
-  if (envelopePrepared) return;
-  envelopePrepared = true;
-  try {
-    const { mountEnvelope } = await import("./envelope.js");
-    if (!cover.hidden && !envelope) envelope = mountEnvelope(stage);
-  } catch {
+function prepareEnvelope() {
+  if (envelopePreparation) return envelopePreparation;
+  const token = activeToken;
+  envelopePreparation = import("./envelope.js").then(({ mountEnvelope }) => {
+    if (activeToken === token && !cover.hidden && !envelope && !stage.hasAttribute("data-opening-fallback")) {
+      envelope = mountEnvelope(stage);
+    }
+  }).catch(() => {
     // The CSS envelope and the HTML links stay available if 3D is unavailable.
-  }
+  });
+  return envelopePreparation;
 }
 
 async function syncGuestAccess() {
@@ -101,7 +102,9 @@ async function syncGuestAccess() {
     openingInvitation = undefined;
     envelope?.dispose();
     envelope = undefined;
-    envelopePrepared = false;
+    envelopePreparation = undefined;
+    stage.removeAttribute("data-opening");
+    stage.removeAttribute("data-opening-fallback");
     resumeMusicOnShow = false;
     if (music && !music.paused) music.pause();
   }
@@ -115,6 +118,7 @@ async function syncGuestAccess() {
     cover.hidden = true;
     content.hidden = true;
     accessDenied.hidden = false;
+    document.documentElement.removeAttribute("data-cover-pending");
     return;
   }
 
@@ -130,17 +134,14 @@ async function syncGuestAccess() {
   } else {
     cover.hidden = false;
     content.hidden = true;
-    window.requestAnimationFrame(() => window.requestAnimationFrame(prepareEnvelope));
+    void prepareEnvelope();
   }
+  document.documentElement.removeAttribute("data-cover-pending");
 }
 
 void syncGuestAccess();
 window.addEventListener("hashchange", () => { void syncGuestAccess(); });
 window.addEventListener("pagehide", () => rememberOpenedInvitation(window.scrollY));
-
-motion.addEventListener("change", () => {
-  if (motion.matches && openingInvitation) void envelope?.open(false);
-});
 
 function startCountdown() {
   const countdown = document.querySelector("[data-countdown]");
@@ -225,13 +226,33 @@ function showInvitation() {
   startCountdown();
 }
 
+async function openEnvelope(token) {
+  if (!envelope) {
+    await Promise.race([
+      prepareEnvelope(),
+      new Promise((resolve) => window.setTimeout(resolve, 1200)),
+    ]);
+  }
+  if (token !== activeToken) return;
+  if (envelope && stage.hasAttribute("data-rendered")) {
+    stage.setAttribute("data-opening", "");
+    await envelope.open();
+    if (token !== activeToken || stage.hasAttribute("data-rendered")) return;
+    stage.removeAttribute("data-opening");
+  }
+
+  stage.setAttribute("data-opening-fallback", "");
+  const animations = stage.getAnimations({ subtree: true });
+  await Promise.allSettled(animations.map((animation) => animation.finished));
+}
+
 function revealInvitation() {
   if (!guestName || openedToken === activeToken) return Promise.resolve();
   if (openingInvitation) return openingInvitation;
   const token = activeToken;
   // Start audio within the click gesture, before waiting for the animation.
   playMusic();
-  openingInvitation = Promise.resolve(envelope?.open(!motion.matches)).then(() => {
+  openingInvitation = openEnvelope(token).then(() => {
     if (!guestName || activeToken !== token) return;
     openedToken = token;
     rememberOpenedInvitation(0);
@@ -248,10 +269,11 @@ for (const link of [openLink, ...document.querySelectorAll("[data-invitation-lin
     if (!guestName) return;
     const request = ++navigation;
     const target = document.getElementById(link.hash.slice(1));
-    if (link === openLink) await revealInvitation();
+    const opensEnvelope = link === openLink;
+    if (opensEnvelope) await revealInvitation();
     if (request !== navigation || !guestName) return;
-    target.scrollIntoView({ behavior: link === openLink ? "instant" : "auto" });
-    (link === openLink ? openingTitle : target).focus({ preventScroll: true });
+    target.scrollIntoView({ behavior: opensEnvelope ? "instant" : "auto" });
+    (opensEnvelope ? openingTitle : target).focus({ preventScroll: true });
   });
 }
 

@@ -11,9 +11,15 @@
   <meta property="og:title" content="{{TITLE}}">
   <meta property="og:description" content="{{DESCRIPTION}}">
   {{SOCIAL}}
-  <link rel="stylesheet" href="./styles.css?v={{CACHE_BUST}}">
+  <script>
+    const invitationToken = location.hash.match(/^#to=([a-z0-9_-]{6,64})$/)?.[1];
+    if (invitationToken && history.state?.graduationInvitation?.token !== invitationToken) {
+      document.documentElement.setAttribute("data-cover-pending", "");
+    }
+  </script>
+  <link rel="stylesheet" href="{{ASSET_BASE}}styles.css?v={{CACHE_BUST}}">
   <script id="guest-data" type="application/json">{{GUESTS}}</script>
-  <script src="./invitation.js?v={{CACHE_BUST}}" defer></script>
+  <script src="{{ASSET_BASE}}invitation.js?v={{CACHE_BUST}}" defer></script>
 </head>
 <body>
   {{MUSIC}}
@@ -38,7 +44,7 @@
         <p class="section-copy">Đường dẫn không hợp lệ hoặc không thuộc danh sách khách mời. Vui lòng kiểm tra lại link được {{NAME}} gửi nhé.</p>
       </div>
     </section>
-    <section class="cover" hidden aria-labelledby="title">
+    <section class="cover invitation-cover" hidden aria-labelledby="title">
       <div class="sprig sprig-left" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
       <div class="sprig sprig-right" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
       <div class="cover-inner shell">
@@ -46,6 +52,7 @@
         <h1 id="title">Thiệp mời <em>tốt nghiệp</em></h1>
         <div class="envelope-stage" id="envelope-stage" aria-hidden="true">
           <div class="envelope-static">
+            <span class="envelope-static-insert"></span>
             <span class="envelope-static-flap"></span>
             <span class="envelope-static-seal">✦</span>
           </div>

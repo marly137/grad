@@ -154,6 +154,9 @@ const { encrypted: encryptedGuests, list: guestList } = encryptGuests(guests);
 
 const sharePreviewSource = new URL("share-preview.png", source);
 const sharePreviewPath = "assets/share-preview.png";
+const shareRoute = "moi/";
+const shareOutput = new URL(shareRoute, output);
+const shareSite = site ? new URL(shareRoute, site) : null;
 const [stylesBuffer, invitationBuffer, envelopeBuffer, sharePreview] = await Promise.all([
   readFile(new URL("styles.css", source)),
   readFile(new URL("invitation.js", source)),
@@ -175,20 +178,7 @@ const markup = {
   GUESTS: JSON.stringify(encryptedGuests).replaceAll("<", "\\u003c"),
   INVITATION: invitation.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("\n              "),
   SIGNATURE: signature.length ? `<p class="letter-signature"><em>${signature.map(escapeHtml).join("<br>")}</em></p>` : "",
-  MUSIC: musicFile ? '<audio id="background-music" src="./assets/nhac-nen.mp3" preload="none" loop></audio>' : "",
   MUSIC_CONTROL: musicFile ? '<button class="music-button" type="button" data-music-toggle aria-controls="background-music" aria-label="Phát nhạc" title="Phát nhạc" hidden></button>' : "",
-  SOCIAL: site ? [
-    `<link rel="canonical" href="${escapeHtml(site.href)}">`,
-    `<meta property="og:url" content="${escapeHtml(site.href)}">`,
-    `<meta property="og:image" content="${escapeHtml(shareImage.href)}">`,
-    '<meta property="og:image:type" content="image/png">',
-    '<meta property="og:image:width" content="1200">',
-    '<meta property="og:image:height" content="630">',
-    `<meta property="og:image:alt" content="${shareImageAlt}">`,
-    '<meta name="twitter:card" content="summary_large_image">',
-    `<meta name="twitter:image" content="${escapeHtml(shareImage.href)}">`,
-    `<meta name="twitter:image:alt" content="${shareImageAlt}">`,
-  ].join("\n  ") : "",
   DEMO: event.isDemo ? '<p class="demo shell">Bản minh họa · Thông tin buổi lễ là dữ liệu mẫu.</p>' : "",
   MAP_EMBED: mapEmbed ? `<iframe class="venue-map" data-map-src="${escapeHtml(mapEmbed.href)}" title="Bản đồ ${escapeHtml(venue)}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>` : "",
   PHOTO_MEETUP: meetup ? `<div class="detail-item">
@@ -197,14 +187,39 @@ const markup = {
           </div>` : "",
 };
 
-const template = await readFile(new URL("index.html", source), "utf8");
-const html = template.replaceAll(/\{\{([A-Z_]+)\}\}/g, (_, key) => {
-  if (Object.hasOwn(markup, key)) return markup[key];
-  if (Object.hasOwn(values, key)) return escapeHtml(values[key]);
-  throw new Error(`Thiếu dữ liệu cho ${key}.`);
-});
+function socialMetadata(pageUrl) {
+  if (!pageUrl) return "";
+  return [
+    `<link rel="canonical" href="${escapeHtml(pageUrl.href)}">`,
+    `<meta property="og:url" content="${escapeHtml(pageUrl.href)}">`,
+    `<meta property="og:image" content="${escapeHtml(shareImage.href)}">`,
+    `<meta property="og:image:secure_url" content="${escapeHtml(shareImage.href)}">`,
+    '<meta property="og:image:type" content="image/png">',
+    '<meta property="og:image:width" content="1200">',
+    '<meta property="og:image:height" content="630">',
+    `<meta property="og:image:alt" content="${shareImageAlt}">`,
+    '<meta name="twitter:card" content="summary_large_image">',
+    `<meta name="twitter:image" content="${escapeHtml(shareImage.href)}">`,
+    `<meta name="twitter:image:alt" content="${shareImageAlt}">`,
+  ].join("\n  ");
+}
 
-await mkdir(assets, { recursive: true });
+const template = await readFile(new URL("index.html", source), "utf8");
+function renderPage(pageUrl, assetBase) {
+  const pageMarkup = {
+    ...markup,
+    ASSET_BASE: assetBase,
+    MUSIC: musicFile ? `<audio id="background-music" src="${assetBase}assets/nhac-nen.mp3" preload="none" loop></audio>` : "",
+    SOCIAL: socialMetadata(pageUrl),
+  };
+  return template.replaceAll(/\{\{([A-Z_]+)\}\}/g, (_, key) => {
+    if (Object.hasOwn(pageMarkup, key)) return pageMarkup[key];
+    if (Object.hasOwn(values, key)) return escapeHtml(values[key]);
+    throw new Error(`Thiếu dữ liệu cho ${key}.`);
+  });
+}
+
+await Promise.all([mkdir(assets, { recursive: true }), mkdir(shareOutput, { recursive: true })]);
 await build({
   entryPoints: [fileURLToPath(new URL("envelope.js", source))],
   outfile: fileURLToPath(new URL("envelope.js", output)),
@@ -222,7 +237,7 @@ for (const asset of oldAssets) {
     await rm(new URL(encodeURIComponent(asset.name), assets), { force: true });
   }
 }
-const baseUrl = site ? site.href : "http://127.0.0.1:8712/";
+const baseUrl = shareSite ? shareSite.href : `http://127.0.0.1:8712/${shareRoute}`;
 const guestLinksText = guestList.map(({ name: guest, token }) => `${guest}: ${baseUrl}#to=${token}`).join("\n");
 const copyTasks = [
   copyFile(sharePreviewSource, new URL(sharePreviewPath, output)),
@@ -235,6 +250,9 @@ if (!isCI) {
   copyTasks.push(writeFile(linksOutput, `${guestLinksText}\n`));
 }
 await Promise.all(copyTasks);
-await writeFile(new URL("index.html", output), html);
+await Promise.all([
+  writeFile(new URL("index.html", output), renderPage(site, "./")),
+  writeFile(new URL("index.html", shareOutput), renderPage(shareSite, "../")),
+]);
 console.log(`Đã dựng ${event.isDemo ? "thiệp minh họa" : "thiệp mời"} trong dist/ (${guestList.length} khách mời).`);
 if (!isCI) console.log(guestLinksText);
