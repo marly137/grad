@@ -107,7 +107,7 @@ if (musicFile && (!musicFile.isFile() || musicFile.size === 0 || musicFile.size 
 const [ceremonyDay, ceremonyMonth, ceremonyYear] = shortDate.format(ceremony.date).split("/");
 const values = {
   TITLE: event.isDemo ? "Thiệp mời tốt nghiệp · Bản minh họa" : `Thiệp mời tốt nghiệp · ${name}`,
-  DESCRIPTION: invitation[0],
+  DESCRIPTION: `Một lời mời chung vui trong ngày tốt nghiệp của ${name}.`,
   NAME: name,
   CEREMONY_AT: ceremony.value,
   CEREMONY_DATE: ceremony.value.slice(0, 10),
@@ -152,10 +152,13 @@ function encryptGuests(guestMap) {
 
 const { encrypted: encryptedGuests, list: guestList } = encryptGuests(guests);
 
-const [stylesBuffer, invitationBuffer, envelopeBuffer] = await Promise.all([
+const sharePreviewSource = new URL("share-preview.png", source);
+const sharePreviewPath = "assets/share-preview.png";
+const [stylesBuffer, invitationBuffer, envelopeBuffer, sharePreview] = await Promise.all([
   readFile(new URL("styles.css", source)),
   readFile(new URL("invitation.js", source)),
   readFile(new URL("envelope.js", source)),
+  readFile(sharePreviewSource),
 ]);
 const cacheBust = createHash("sha256")
   .update(stylesBuffer)
@@ -163,6 +166,9 @@ const cacheBust = createHash("sha256")
   .update(envelopeBuffer)
   .digest("hex")
   .slice(0, 8);
+const shareImage = site ? new URL(sharePreviewPath, site) : null;
+shareImage?.searchParams.set("v", createHash("sha256").update(sharePreview).digest("hex").slice(0, 8));
+const shareImageAlt = escapeHtml(`Phong bì xanh của thiệp mời tốt nghiệp ${name}`);
 
 const markup = {
   CACHE_BUST: cacheBust,
@@ -174,6 +180,14 @@ const markup = {
   SOCIAL: site ? [
     `<link rel="canonical" href="${escapeHtml(site.href)}">`,
     `<meta property="og:url" content="${escapeHtml(site.href)}">`,
+    `<meta property="og:image" content="${escapeHtml(shareImage.href)}">`,
+    '<meta property="og:image:type" content="image/png">',
+    '<meta property="og:image:width" content="1200">',
+    '<meta property="og:image:height" content="630">',
+    `<meta property="og:image:alt" content="${shareImageAlt}">`,
+    '<meta name="twitter:card" content="summary_large_image">',
+    `<meta name="twitter:image" content="${escapeHtml(shareImage.href)}">`,
+    `<meta name="twitter:image:alt" content="${shareImageAlt}">`,
   ].join("\n  ") : "",
   DEMO: event.isDemo ? '<p class="demo shell">Bản minh họa · Thông tin buổi lễ là dữ liệu mẫu.</p>' : "",
   MAP_EMBED: mapEmbed ? `<iframe class="venue-map" data-map-src="${escapeHtml(mapEmbed.href)}" title="Bản đồ ${escapeHtml(venue)}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>` : "",
@@ -204,13 +218,14 @@ await build({
 // Remove cover images from previous builds so the static upload contains no portraits.
 const oldAssets = await readdir(assets, { withFileTypes: true });
 for (const asset of oldAssets) {
-  if (asset.isFile() && /\.(?:jpe?g|png|webp)$/i.test(asset.name)) {
+  if (asset.isFile() && asset.name !== "share-preview.png" && /\.(?:jpe?g|png|webp)$/i.test(asset.name)) {
     await rm(new URL(encodeURIComponent(asset.name), assets), { force: true });
   }
 }
 const baseUrl = site ? site.href : "http://127.0.0.1:8712/";
 const guestLinksText = guestList.map(({ name: guest, token }) => `${guest}: ${baseUrl}#to=${token}`).join("\n");
 const copyTasks = [
+  copyFile(sharePreviewSource, new URL(sharePreviewPath, output)),
   copyFile(new URL("styles.css", source), new URL("styles.css", output)),
   copyFile(new URL("invitation.js", source), new URL("invitation.js", output)),
   musicFile ? copyFile(musicSource, musicOutput) : rm(musicOutput, { force: true }),

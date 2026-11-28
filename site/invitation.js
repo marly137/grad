@@ -22,9 +22,12 @@ const openingTitle = document.getElementById("opening-title");
 const openLink = document.querySelector("[data-open-envelope]");
 
 let guestName = "";
+let activeToken = "";
+let openedToken = "";
 let envelope;
 let envelopePrepared = false;
 let openingInvitation;
+let invitationInitialized = false;
 let navigation = 0;
 let resolveGeneration = 0;
 let resumeMusicOnShow = false;
@@ -33,6 +36,15 @@ function parseGuestToken(fragment) {
   if (!fragment.startsWith("#to=")) return "";
   const token = fragment.slice(4);
   return /^[a-z0-9_-]{6,64}$/.test(token) ? token : "";
+}
+
+function rememberOpenedInvitation(scrollY) {
+  if (!openedToken || openedToken !== activeToken) return;
+  try {
+    history.replaceState({ ...history.state, graduationInvitation: { token: openedToken, scrollY } }, "");
+  } catch {
+    // The invitation stays usable if the browser restricts history changes.
+  }
 }
 
 function decodeBase64(value) {
@@ -71,8 +83,7 @@ async function prepareEnvelope() {
   envelopePrepared = true;
   try {
     const { mountEnvelope } = await import("./envelope.js");
-    envelope = mountEnvelope(stage);
-    if (openingInvitation) void envelope?.open(false);
+    if (!cover.hidden && !envelope) envelope = mountEnvelope(stage);
   } catch {
     // The CSS envelope and the HTML links stay available if 3D is unavailable.
   }
@@ -84,6 +95,16 @@ async function syncGuestAccess() {
   const resolved = await resolveGuestName(token);
   if (generation !== resolveGeneration) return;
 
+  if (token !== activeToken) {
+    navigation++;
+    activeToken = token;
+    openingInvitation = undefined;
+    envelope?.dispose();
+    envelope = undefined;
+    envelopePrepared = false;
+    resumeMusicOnShow = false;
+    if (music && !music.paused) music.pause();
+  }
   guestName = resolved;
   for (const greeting of greetings) greeting.textContent = guestName;
 
@@ -98,9 +119,14 @@ async function syncGuestAccess() {
   }
 
   accessDenied.hidden = true;
-  if (openingInvitation) {
-    cover.hidden = true;
-    content.hidden = false;
+  const saved = history.state?.graduationInvitation;
+  if (openedToken === token || saved?.token === token) {
+    const restoring = openedToken !== token;
+    openedToken = token;
+    showInvitation();
+    if (restoring && Number.isFinite(saved.scrollY)) {
+      window.requestAnimationFrame(() => window.scrollTo({ top: saved.scrollY, behavior: "instant" }));
+    }
   } else {
     cover.hidden = false;
     content.hidden = true;
@@ -110,6 +136,7 @@ async function syncGuestAccess() {
 
 void syncGuestAccess();
 window.addEventListener("hashchange", () => { void syncGuestAccess(); });
+window.addEventListener("pagehide", () => rememberOpenedInvitation(window.scrollY));
 
 motion.addEventListener("change", () => {
   if (motion.matches && openingInvitation) void envelope?.open(false);
@@ -185,21 +212,30 @@ if (music && musicToggle) {
   musicToggle.hidden = false;
 }
 
+function showInvitation() {
+  cover.hidden = true;
+  content.hidden = false;
+  if (invitationInitialized) return;
+  invitationInitialized = true;
+  const map = document.querySelector("[data-map-src]");
+  if (map) {
+    map.src = map.dataset.mapSrc;
+    map.hidden = false;
+  }
+  startCountdown();
+}
+
 function revealInvitation() {
-  if (!guestName) return Promise.resolve();
+  if (!guestName || openedToken === activeToken) return Promise.resolve();
   if (openingInvitation) return openingInvitation;
+  const token = activeToken;
   // Start audio within the click gesture, before waiting for the animation.
   playMusic();
   openingInvitation = Promise.resolve(envelope?.open(!motion.matches)).then(() => {
-    if (!guestName) return;
-    cover.hidden = true;
-    content.hidden = false;
-    const map = document.querySelector("[data-map-src]");
-    if (map) {
-      map.src = map.dataset.mapSrc;
-      map.hidden = false;
-    }
-    startCountdown();
+    if (!guestName || activeToken !== token) return;
+    openedToken = token;
+    rememberOpenedInvitation(0);
+    showInvitation();
   });
   return openingInvitation;
 }
