@@ -31,12 +31,6 @@ let navigation = 0;
 let resolveGeneration = 0;
 let resumeMusicOnShow = false;
 
-function parseGuestToken(fragment) {
-  if (!fragment.startsWith("#to=")) return "";
-  const token = fragment.slice(4);
-  return /^[a-z0-9_-]{6,64}$/.test(token) ? token : "";
-}
-
 function rememberOpenedInvitation(scrollY) {
   if (!openedToken || openedToken !== activeToken) return;
   try {
@@ -92,7 +86,7 @@ function prepareEnvelope() {
 
 async function syncGuestAccess() {
   const generation = ++resolveGeneration;
-  const token = parseGuestToken(window.location.hash);
+  const token = readInvitationToken();
   const resolved = await resolveGuestName(token);
   if (generation !== resolveGeneration) return;
 

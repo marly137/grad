@@ -9,7 +9,7 @@ const output = new URL("dist/", project);
 const assets = new URL("assets/", output);
 const musicSource = new URL("nhac-nen.mp3", project);
 const musicOutput = new URL("nhac-nen.mp3", assets);
-const linksOutput = new URL("outputs/grad-invitation/guest-links.txt", project);
+const linksOutput = new URL("outputs/grad-invitation/guest-links-local.txt", project);
 const event = JSON.parse(await readFile(new URL("event.json", project), "utf8"));
 const isCI = Boolean(process.env.CI || process.env.GITHUB_ACTIONS);
 const guestsSource = process.env.GUESTS_JSON?.trim()
@@ -238,7 +238,11 @@ for (const asset of oldAssets) {
   }
 }
 const baseUrl = shareSite ? shareSite.href : `http://127.0.0.1:8712/${shareRoute}`;
-const guestLinksText = guestList.map(({ name: guest, token }) => `${guest}: ${baseUrl}#to=${token}`).join("\n");
+const guestLinksText = guestList.map(({ name: guest, token }) => {
+  const link = new URL(baseUrl);
+  link.searchParams.set("to", token);
+  return `${guest}: ${link.href}`;
+}).join("\n");
 const copyTasks = [
   copyFile(sharePreviewSource, new URL(sharePreviewPath, output)),
   copyFile(new URL("styles.css", source), new URL("styles.css", output)),

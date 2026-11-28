@@ -2,7 +2,7 @@
 
 ## Xem trước và cập nhật
 
-Chạy `npm ci` một lần để cài Three.js và công cụ build. Sau đó chạy `npm run dev` trong thư mục dự án rồi mở `http://127.0.0.1:8712/`. Lệnh dùng Node.js và Python. Nhấn `Ctrl+C` để dừng server. Để thử tên người nhận, mở trang với `#to=Minh%20Anh` ở cuối địa chỉ. Mở địa chỉ gốc để xem lời chào chung.
+Chạy `npm ci` một lần để cài Three.js và công cụ build. Sau đó chạy `npm run dev` trong thư mục dự án rồi mở `http://127.0.0.1:8712/moi/?to=MA_KHACH` với mã có trong `guests.json`. Lệnh dùng Node.js và Python. Nhấn `Ctrl+C` để dừng server.
 
 Sửa `event.json` khi đổi nội dung, chạy lại `npm run build` rồi tải lại trang. `ceremonyAt` dùng dạng `YYYY-MM-DDTHH:mm:ss+07:00`, còn `guestFrom` và `guestUntil` dùng dạng `HH:mm`. Giữ `photoAt` là `""` để ẩn phần giờ hẹn chụp ảnh.
 
@@ -20,6 +20,6 @@ Khi đổi địa điểm, cập nhật `venue`, `address`, `mapsUrl` và `mapEm
 
 ## Tạo link và lời nhắn cho nhiều khách
 
-1. Mở [Google Sheet khách mời riêng tư](https://docs.google.com/spreadsheets/d/1iihYx4RbvWqVOpboYR0hD4yvGG6I-SjdxzIjCv8kxco/edit) rồi điền URL công khai của thiệp tại ô `B2`.
-2. Dán tên hoặc cách xưng hô từ `A5` trở xuống. Cột B tạo link, cột C tạo lời nhắn để sao chép. Đánh dấu cột D khi đã gửi.
-3. Gửi URL gốc nếu muốn mời cả nhóm. Ai có link cá nhân hóa đều có thể đọc tên xuất hiện trên thiệp, kể cả khi link được chuyển tiếp.
+1. Thêm mã và tên khách vào `guests.json`. Khi dùng GitHub Pages, cập nhật GitHub Secret `GUESTS_JSON` cùng danh sách rồi triển khai lại.
+2. Chạy `npm run build` và sao chép link của từng khách từ `outputs/grad-invitation/guest-links-local.txt`. Link mới dùng `/moi/?to=MA_KHACH` để ứng dụng chat lấy ảnh bìa chung. Link cũ dùng `#to=MA_KHACH` vẫn mở được.
+3. Gửi đúng link cho từng khách. Ai có link đều có thể mở thiệp của khách đó. Ứng dụng chat và dịch vụ lưu trữ có thể thấy mã trong link mới. Tên khách hiển thị khi mở thiệp.

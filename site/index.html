@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#f8fbfd">
   <title>{{TITLE}}</title>
   <meta name="description" content="{{DESCRIPTION}}">
@@ -12,7 +13,12 @@
   <meta property="og:description" content="{{DESCRIPTION}}">
   {{SOCIAL}}
   <script>
-    const invitationToken = location.hash.match(/^#to=([a-z0-9_-]{6,64})$/)?.[1];
+    function readInvitationToken() {
+      const token = location.hash.match(/^#to=(.*)$/)?.[1]
+        ?? new URLSearchParams(location.search).get("to") ?? "";
+      return /^[a-z0-9_-]{6,64}$/.test(token) ? token : "";
+    }
+    const invitationToken = readInvitationToken();
     if (invitationToken && history.state?.graduationInvitation?.token !== invitationToken) {
       document.documentElement.setAttribute("data-cover-pending", "");
     }
