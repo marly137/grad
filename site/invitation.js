@@ -27,9 +27,9 @@ let envelope;
 let envelopePreparation;
 let openingInvitation;
 let invitationInitialized = false;
-let navigation = 0;
 let resolveGeneration = 0;
 let resumeMusicOnShow = false;
+let scrollFrame;
 
 function rememberOpenedInvitation(scrollY) {
   if (!openedToken || openedToken !== activeToken) return;
@@ -91,7 +91,7 @@ async function syncGuestAccess() {
   if (generation !== resolveGeneration) return;
 
   if (token !== activeToken) {
-    navigation++;
+    window.cancelAnimationFrame(scrollFrame);
     activeToken = token;
     openingInvitation = undefined;
     envelope?.dispose();
@@ -99,6 +99,10 @@ async function syncGuestAccess() {
     envelopePreparation = undefined;
     stage.removeAttribute("data-opening");
     stage.removeAttribute("data-opening-fallback");
+    cover.removeAttribute("data-dismissing");
+    cover.style.removeProperty("--cover-offset");
+    cover.inert = false;
+    content.removeAttribute("data-entering");
     resumeMusicOnShow = false;
     if (music && !music.paused) music.pause();
   }
@@ -106,7 +110,6 @@ async function syncGuestAccess() {
   for (const greeting of greetings) greeting.textContent = guestName;
 
   if (!guestName) {
-    navigation++;
     resumeMusicOnShow = false;
     if (music && !music.paused) music.pause();
     cover.hidden = true;
@@ -208,7 +211,7 @@ if (music && musicToggle) {
 }
 
 function showInvitation() {
-  cover.hidden = true;
+  if (!cover.hasAttribute("data-dismissing")) cover.hidden = true;
   content.hidden = false;
   if (invitationInitialized) return;
   invitationInitialized = true;
@@ -246,28 +249,74 @@ function revealInvitation() {
   const token = activeToken;
   // Start audio within the click gesture, before waiting for the animation.
   playMusic();
-  openingInvitation = openEnvelope(token).then(() => {
+  openingInvitation = openEnvelope(token).then(async () => {
     if (!guestName || activeToken !== token) return;
     openedToken = token;
     rememberOpenedInvitation(0);
+
+    // Keep the opened envelope in place while the page enters beneath it.
+    cover.style.setProperty("--cover-offset", `${-window.scrollY}px`);
+    cover.setAttribute("data-dismissing", "");
+    cover.inert = true;
+    content.setAttribute("data-entering", "");
     showInvitation();
+    window.scrollTo({ top: 0, behavior: "instant" });
+    openingTitle.focus({ preventScroll: true });
+
+    await Promise.allSettled(cover.getAnimations().map((animation) => animation.finished));
+    if (activeToken !== token) return;
+    cover.hidden = true;
+    cover.inert = false;
+    cover.removeAttribute("data-dismissing");
+    cover.style.removeProperty("--cover-offset");
+    content.removeAttribute("data-entering");
+    envelope?.dispose();
+    envelope = undefined;
   });
   return openingInvitation;
 }
 
+function scrollToInvitationSection(target) {
+  window.cancelAnimationFrame(scrollFrame);
+  target.focus({ preventScroll: true });
+  const margin = Number.parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+  const from = window.scrollY;
+  const limit = document.documentElement.scrollHeight - window.innerHeight;
+  const to = Math.max(0, Math.min(limit, from + target.getBoundingClientRect().top - margin));
+  const distance = to - from;
+  if (Math.abs(distance) < 2) {
+    window.scrollTo({ top: to, behavior: "instant" });
+    return;
+  }
+
+  // A deliberate jump to the letter still scrolls in reduced-motion mode, with a shorter duration.
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const duration = reduceMotion ? 320 : Math.min(800, 350 + Math.abs(distance) * .35);
+  const startedAt = performance.now();
+  let previous = from;
+  function move(now) {
+    // Yield if the guest takes over scrolling.
+    if (Math.abs(window.scrollY - previous) > 2) return;
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = progress * progress * (3 - 2 * progress);
+    window.scrollTo({ top: from + distance * eased, behavior: "instant" });
+    previous = window.scrollY;
+    if (progress < 1) scrollFrame = window.requestAnimationFrame(move);
+  }
+  scrollFrame = window.requestAnimationFrame(move);
+}
+
 // Scroll without replacing the personalized URL in the address bar.
 for (const link of [openLink, ...document.querySelectorAll("[data-invitation-link]")]) {
-  link.addEventListener("click", async (event) => {
+  link.addEventListener("click", (event) => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     event.preventDefault();
     if (!guestName) return;
-    const request = ++navigation;
-    const target = document.getElementById(link.hash.slice(1));
-    const opensEnvelope = link === openLink;
-    if (opensEnvelope) await revealInvitation();
-    if (request !== navigation || !guestName) return;
-    target.scrollIntoView({ behavior: opensEnvelope ? "instant" : "auto" });
-    (opensEnvelope ? openingTitle : target).focus({ preventScroll: true });
+    if (link === openLink) {
+      void revealInvitation();
+      return;
+    }
+    scrollToInvitationSection(document.getElementById(link.hash.slice(1)));
   });
 }
 

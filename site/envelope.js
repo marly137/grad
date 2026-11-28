@@ -1,8 +1,9 @@
 import * as THREE from "three";
 
-const openingTime = 900;
+const openingTime = 1120;
 const clamp = (value) => THREE.MathUtils.clamp(value, 0, 1);
-const ease = (value) => 1 - (1 - value) ** 3;
+const smoothstep = (value) => value * value * (3 - 2 * value);
+const phase = (progress, start, end) => smoothstep(clamp((progress - start) / (end - start)));
 
 function paper(color) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.88, side: THREE.DoubleSide });
@@ -32,6 +33,10 @@ function makeEnvelope() {
   const back = box(4.18, 2.62, .14, paper("#b4cfe3"));
   back.position.z = -.1;
   envelope.add(back);
+
+  const lining = panel([[-2.01, -1.23], [2.01, -1.23], [2.01, 1.25], [-2.01, 1.25]], paper("#91adc5"));
+  lining.position.z = -.027;
+  envelope.add(lining);
 
   const card = new THREE.Group();
   card.position.set(0, -.22, .022);
@@ -72,7 +77,7 @@ function makeEnvelope() {
   flap.add(seal);
   envelope.add(flap);
 
-  return { envelope, card, flap };
+  return { envelope, card, flap, seal };
 }
 
 export function mountEnvelope(stage) {
@@ -84,11 +89,11 @@ export function mountEnvelope(stage) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene();
-  const camera = new THREE.OrthographicCamera(-3, 3, 2.3, -2.3, .1, 30);
+  const camera = new THREE.PerspectiveCamera(28, 1, .1, 30);
   camera.position.set(0, .33, 10);
   camera.lookAt(0, .33, 0);
 
-  const { envelope, card, flap } = makeEnvelope();
+  const { envelope, card, flap, seal } = makeEnvelope();
   const fill = new THREE.HemisphereLight(0xf6faff, 0xa1b8cb, 1.55);
   const key = new THREE.DirectionalLight(0xf1f8ff, 1.8);
   key.position.set(-3.5, 5, 8);
@@ -114,10 +119,8 @@ export function mountEnvelope(stage) {
     if (disposed || !width || !height) return;
     const aspect = width / height;
     const halfHeight = Math.max(2.42, 2.75 / aspect);
-    camera.top = halfHeight;
-    camera.bottom = -halfHeight;
-    camera.right = halfHeight * aspect;
-    camera.left = -camera.right;
+    camera.aspect = aspect;
+    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(halfHeight / camera.position.z));
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(width, height, false);
@@ -142,13 +145,25 @@ export function mountEnvelope(stage) {
   }
 
   function pose(progress) {
-    const lift = ease(clamp((progress - .45) / .55));
-    flap.rotation.x = -Math.PI * ease(clamp(progress / .56));
-    flap.position.z = .18 - .24 * ease(clamp((progress - .27) / .29));
-    card.position.y = -.22 + 1.48 * lift;
-    card.position.z = .022 + .085 * lift;
-    envelope.rotation.y = -.35 + .18 * lift;
-    envelope.rotation.z = -.11 + .055 * lift;
+    const release = phase(progress, 0, .19);
+    const hinge = phase(progress, .08, .58);
+    const lift = phase(progress, .43, .95);
+    const drawForward = phase(progress, .73, 1);
+    const recoil = Math.sin(Math.PI * release);
+
+    // The seal yields first, then the flap opens on the fold.
+    seal.position.z = .057 + .08 * release;
+    flap.rotation.x = -2.96 * hinge - .09 * Math.sin(Math.PI * hinge);
+    flap.position.z = .18 - .22 * phase(progress, .3, .57);
+
+    // Lift the card clear of the pocket before pitching it toward the viewer.
+    card.position.y = -.22 + 2.18 * lift;
+    card.position.z = .022 + .58 * drawForward;
+    card.rotation.set(-.18 * drawForward, .1 * drawForward, -.07 * drawForward);
+    envelope.position.y = -.33 - .48 * lift;
+    envelope.rotation.x = -.15 - .10 * recoil + .16 * lift;
+    envelope.rotation.y = -.35 + .17 * lift;
+    envelope.rotation.z = -.11 + .032 * recoil + .065 * lift;
   }
 
   function open(animate = true) {
